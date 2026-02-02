@@ -1,4 +1,4 @@
-# IAM Role - EC2 will "become" this identity that is only EC2 can use this role
+# IAM Role - EC2 will assume this identity
 resource "aws_iam_role" "ec2_s3_reader" {
   name = "ec2-s3-reader-role"
 
@@ -12,12 +12,16 @@ resource "aws_iam_role" "ec2_s3_reader" {
       }
     }]
   })
+
+  tags = {
+    Name = "iam-lab-role"
+  }
 }
 
-# IAM Policy - LEAST PRIVILEGE only read, explicitly deny delete
+# IAM Policy - Least Privilege (read yes, delete no)
 resource "aws_iam_policy" "s3_read_only" {
   name        = "s3-read-only-policy"
-  description = "Read S3, NO delete"
+  description = "Allow S3 read, deny S3 delete"
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -39,16 +43,24 @@ resource "aws_iam_policy" "s3_read_only" {
       }
     ]
   })
+
+  tags = {
+    Name = "iam-lab-policy"
+  }
 }
 
-# Attach policy to role connects the policy to the role
+# Attach policy to role
 resource "aws_iam_role_policy_attachment" "attach" {
   role       = aws_iam_role.ec2_s3_reader.name
   policy_arn = aws_iam_policy.s3_read_only.arn
 }
 
-# Instance profile - lets EC2 use the role
+# Instance profile - allows EC2 to use the role
 resource "aws_iam_instance_profile" "ec2_profile" {
   name = "ec2-s3-reader-profile"
   role = aws_iam_role.ec2_s3_reader.name
+
+  tags = {
+    Name = "iam-lab-instance-profile"
+  }
 }
